@@ -95,6 +95,279 @@
   }
 }
 
+/* Main Container */
+.app-container {
+  min-height: 100vh;
+  background-color: #f97316;
+  font-family: monospace;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  padding: 32px;
+  position: relative;
+}
+
+/* Title */
+.app-title {
+  font-size: 36px;
+  transform: rotate(-2deg);
+}
+
+/* Login Form */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 256px;
+}
+
+.login-form label {
+  font-size: 14px;
+}
+
+.login-form input {
+  width: 100%;
+  text-align: center;
+  border-radius: 9999px;
+  background-color: #d1d5db;
+  border: 2px solid #000;
+  padding: 4px 0;
+}
+
+.login-form input:focus {
+  outline: none;
+  border-color: #000;
+}
+
+/* Buttons */
+.btn {
+  border-radius: 9999px;
+  border: 2px solid #000;
+  padding: 8px 0;
+  font-family: monospace;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.btn-primary {
+  width: 100%;
+  background-color: #bbf7d0;
+}
+
+.btn-primary:hover {
+  background-color: #86efac;
+}
+
+/* Options Buttons */
+.options-container {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn-option {
+  border: 1px solid #000;
+  border-radius: 4px;
+  padding: 4px 12px;
+  background-color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  font-family: monospace;
+  transition: background-color 0.2s;
+}
+
+.btn-option:hover {
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Modal Content */
+.modal {
+  background-color: #f97316;
+  border: 4px solid #000;
+  border-radius: 8px;
+  padding: 24px;
+  position: relative;
+  width: 91.666667%;
+  max-width: 448px;
+}
+
+.modal.teclas {
+  max-width: 800px;
+}
+
+.modal-sky {
+  background-color: #06b6d4;
+  border-width: 6px;
+}
+
+/* Close Button */
+.btn-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  background-color: #fff;
+  border: 2px solid #000;
+  cursor: pointer;
+  font-family: monospace;
+  font-weight: bold;
+}
+
+.btn-close:hover {
+  background-color: #f0f0f0;
+}
+
+/* Modal Title */
+.modal-title {
+  text-align: center;
+  font-size: 24px;
+  margin-bottom: 16px;
+}
+
+/* Modal Content Area */
+.modal-content {
+  background-color: #e5e7eb;
+  padding: 16px;
+  border-radius: 8px;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 24px;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.tab {
+  cursor: pointer;
+}
+
+.tab.active {
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+/* Design Screen */
+.design-section {
+  background-color: #14b8a6;
+  border: 4px solid #000;
+  padding: 16px;
+  border-radius: 8px;
+  display: flex;
+  gap: 16px;
+}
+
+.colors-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.color-box {
+  width: 36px;
+  height: 36px;
+  border: 2px solid #000;
+  cursor: pointer;
+}
+
+.tank-preview {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+.tank-display {
+  width: 64px;
+  height: 48px;
+  background-color: #dc2626;
+  border: 2px solid #000;
+  border-radius: 8px;
+}
+
+/* Sliders */
+.slider-container {
+  margin-bottom: 16px;
+}
+
+.slider-label {
+  font-size: 14px;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.slider {
+  height: 24px;
+  border: 2px solid #000;
+  border-radius: 9999px;
+  width: 100%;
+  display: block;
+}
+
+/* Keys Grid */
+.keys-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 24px;
+  font-size: 14px;
+}
+
+.key-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.key-label {
+  border: 2px solid #000;
+  background-color: #fff;
+  padding: 4px 8px;
+  min-width: 40px;
+  text-align: center;
+  font-family: monospace;
+}
+
+/* Action Buttons */
+.action-button-container {
+  text-align: center;
+  margin-top: 24px;
+}
+
+.btn-accept {
+  border-radius: 9999px;
+  background-color: #bbf7d0;
+  border: 2px solid #000;
+  padding: 4px 24px;
+  cursor: pointer;
+  font-family: monospace;
+  transition: background-color 0.2s;
+}
+
+.btn-accept:hover {
+  background-color: #86efac;
+}
+
+.modal-action-container {
+  text-align: right;
+  margin-top: 16px;
+}
+
 #docs {
   border-right: 1px solid var(--border);
 
