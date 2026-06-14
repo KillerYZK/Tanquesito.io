@@ -39,7 +39,13 @@ export default function Tanquesitos() {
           onChange={(e) => setUsuario(e.target.value)}
         />
         <button
-          onClick={() => setModal("diseno")}
+          onClick={() => {
+            if (usuario.trim() === "") {
+              alert("Por favor, ingresa un nombre de usuario");
+            } else {
+              setModal("mapa");
+            }
+          }}
           className="btn btn-primary"
         >
           Entrar
@@ -58,34 +64,7 @@ export default function Tanquesitos() {
         </button>
       </div>
 
-      {/* Pantalla 2: Diseña tu Tanque */}
-      {modal === "diseno" && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <button onClick={cerrar} aria-label="Cerrar" className="btn-close">
-              x
-            </button>
-            <h2 className="modal-title">Diseña tu Tanque</h2>
-            <div className="design-section">
-              <div className="colors-grid">
-                {colores.map((c, i) => (
-                  <div key={i} className="color-box" style={{ backgroundColor: c }} />
-                ))}
-              </div>
-              <div className="tank-preview">
-                <div className="tank-display" />
-              </div>
-            </div>
-            <div className="modal-action-container">
-              <button onClick={cerrar} className="btn btn-accept">
-                Entrar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Pantalla 3: Configuracion General */}
       {modal === "general" && (
         <div className="modal-overlay">
           <div className="modal modal-sky">
@@ -96,6 +75,18 @@ export default function Tanquesitos() {
                 <span className="tab" onClick={() => setModal("sonido")}>Sonido</span>
                 <span className="tab" onClick={() => setModal("teclas")}>Teclas</span>
               </div>
+              
+              <h3 style={{ marginTop: "20px" }}>Diseña tu Tanque</h3>
+              <div className="colors-grid">
+                {colores.map((c, i) => (
+                  <div key={i} className="color-box" style={{ backgroundColor: c }} />
+                ))}
+              </div>
+              <div className="tank-preview">
+                <div className="tank-display" />
+              </div>
+
+              <h3 style={{ marginTop: "20px" }}>Otras Configuraciones</h3>
               <div className="colors-grid" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
                 <div className="color-box" style={{ height: "28px", backgroundColor: "#d1d5db" }} />
                 <div className="color-box" style={{ height: "28px", backgroundColor: "#d1d5db" }} />
@@ -115,7 +106,7 @@ export default function Tanquesitos() {
         </div>
       )}
 
-      {/* Pantalla 4: Configuracion Sonido */}
+      {/* Pantalla 3: Configuracion Sonido */}
       {modal === "sonido" && (
         <div className="modal-overlay">
           <div className="modal modal-sky">
@@ -149,7 +140,7 @@ export default function Tanquesitos() {
         </div>
       )}
 
-      {/* Pantalla 5: Configuracion Teclas */}
+      {/* Pantalla 4: Configuracion Teclas */}
       {modal === "teclas" && (
         <div className="modal-overlay">
           <div className="modal modal-sky teclas">
