@@ -1,14 +1,5 @@
 import { useRef, useEffect } from "react";
-import { db } from "../firebase";
-import {
-  ref,
-  set,
-  onValue,
-  onDisconnect,
-  remove,
-  update as fbUpdate,
-  push,
-} from "firebase/database";
+import { db, ref, set, onValue, onDisconnect, remove, fbUpdate, push } from "../firebase";
 
 const PLAYER_SPEED = 4;
 const PLAYER_RADIUS = 20;

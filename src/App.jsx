@@ -1,10 +1,7 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import Game from "./mapa/mapa";
 
-// Componente principal de la aplicación
 export default function Tanquesitos() {
-  // Estados principales del componente
-  const [modal, setModal] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
   const [usuario, setUsuario] = useState("");
@@ -13,7 +10,6 @@ export default function Tanquesitos() {
   const [soundVolume, setSoundVolume] = useState(80);
   const [musicVolume, setMusicVolume] = useState(70);
 
-  // Lista de colores disponibles para el tanque
   const colores = [
     "#29b6e8", "#e8392e", "#3aa845", "#f0d018", "#f29420", "#e23ec0",
     "#2255e8", "#c0231e", "#1f8038", "#c4b418", "#9a5a18", "#7a1ec0",
@@ -25,7 +21,7 @@ export default function Tanquesitos() {
     ["D", "Mover hacia a la derecha"],
     ["S", "Mover hacia atras"],
     ["LMB", "Disparar"],
-    ["A", "Mover hacia a la izquierda"],
+    ["A", "Mover hacia la izquierda"],
     ["ESC", "Salir al menu"],
     ["Z", "Stats"],
     ["M", "Mapa"],
@@ -33,18 +29,6 @@ export default function Tanquesitos() {
     ["V", "Chat"],
   ];
 
-  const cerrar = () => setModal(null);
-
-  if (enJuego) {
-    return <Game usuario={usuario} />;
-  }
-    ["[W]", "  Mover hacia adelante"],
-    ["[D]", "  Mover hacia la derecha"],
-    ["[S]", "  Mover hacia atrás"],
-    ["[A]", "  Mover hacia la izquierda"],
-    ["[LMB]", "  Disparar"];
-
-  // Maneja el cierre del modal con la tecla Escape
   useEffect(() => {
     if (!modalVisible) return;
 
@@ -65,7 +49,6 @@ export default function Tanquesitos() {
 
   const cerrarModal = () => setModalVisible(false);
 
-  // Renderiza el contenido según la pestaña activa
   const renderTabContent = () => {
     if (activeTab === "general") {
       return (
@@ -140,12 +123,14 @@ export default function Tanquesitos() {
     );
   };
 
+  if (enJuego) {
+    return <Game usuario={usuario} />;
+  }
+
   return (
     <div className="app-container">
-      {/* Pantalla 1: Login */}
       <h1 className="app-title">Tanquesitos.io</h1>
 
-      {/* Formulario de entrada de usuario */}
       <div className="login-form">
         <label>Nombre de Usuario</label>
         <input
@@ -160,7 +145,6 @@ export default function Tanquesitos() {
               alert("Por favor, ingresa un nombre de usuario");
             } else {
               setEnJuego(true);
-              abrirModal("general");
             }
           }}
           className="btn btn-primary"
@@ -211,35 +195,9 @@ export default function Tanquesitos() {
                   Teclas
                 </button>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {modal === "teclas" && (
-        <div className="modal-overlay">
-          <div className="modal modal-sky teclas">
-            <h2 className="modal-title">Configuracion</h2>
-            <div className="modal-content">
-              <div className="tabs">
-                <span className="tab" onClick={() => setModal("general")}>General</span>
-                <span className="tab" onClick={() => setModal("sonido")}>Sonido</span>
-                <span className="tab active" onClick={() => setModal("teclas")}>Teclas</span>
-              </div>
-
-              <div className="keys-grid">
-                {teclas.map(([tecla, accion], i) => (
-                  <div key={i} className="key-row">
-                    <span className="key-label">{tecla}</span>
-                    {accion}
-                  </div>
-                ))}
-              </div>
-
               {renderTabContent()}
-
               <div className="action-button-container">
-                <button onClick={cerrarModal} className="btn-accept">
+                <button type="button" onClick={cerrarModal} className="btn-accept">
                   Aceptar
                 </button>
               </div>
