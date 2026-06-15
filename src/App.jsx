@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 
 // Componente principal de la aplicación
 export default function Tanquesitos() {
+  // Estados principales del componente
+  const [modal, setModal] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
   const [usuario, setUsuario] = useState("");
