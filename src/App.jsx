@@ -1,11 +1,13 @@
+import { useState } from "react";
+import Game from "./mapa/mapa";
 import { useEffect, useState } from "react";
 
 // Componente principal de la aplicación
 export default function Tanquesitos() {
-  // Estados principales del componente
   const [modalVisible, setModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
   const [usuario, setUsuario] = useState("");
+  const [enJuego, setEnJuego] = useState(false);
   const [selectedColor, setSelectedColor] = useState("#29b6e8");
   const [soundVolume, setSoundVolume] = useState(80);
   const [musicVolume, setMusicVolume] = useState(70);
@@ -18,6 +20,23 @@ export default function Tanquesitos() {
   ];
 
   const teclas = [
+    ["W", "Mover hacia adelante"],
+    ["D", "Mover hacia a la derecha"],
+    ["S", "Mover hacia atras"],
+    ["LMB", "Disparar"],
+    ["A", "Mover hacia a la izquierda"],
+    ["ESC", "Salir al menu"],
+    ["Z", "Stats"],
+    ["M", "Mapa"],
+    ["Tab", "Lista de jugadores"],
+    ["V", "Chat"],
+  ];
+
+  const cerrar = () => setModal(null);
+
+  if (enJuego) {
+    return <Game usuario={usuario} />;
+  }
     ["[W]", "  Mover hacia adelante"],
     ["[D]", "  Mover hacia la derecha"],
     ["[S]", "  Mover hacia atrás"],
@@ -123,7 +142,7 @@ export default function Tanquesitos() {
 
   return (
     <div className="app-container">
-      {/* Encabezado principal */}
+      {/* Pantalla 1: Login */}
       <h1 className="app-title">Tanquesitos.io</h1>
 
       {/* Formulario de entrada de usuario */}
@@ -140,6 +159,7 @@ export default function Tanquesitos() {
             if (usuario.trim() === "") {
               alert("Por favor, ingresa un nombre de usuario");
             } else {
+              setEnJuego(true);
               abrirModal("general");
             }
           }}
@@ -149,7 +169,6 @@ export default function Tanquesitos() {
         </button>
       </div>
 
-      {/* Botones de opciones fuera del modal */}
       {!modalVisible && (
         <div className="options-container">
           <button type="button" onClick={() => abrirModal("general")} className="btn-option">
@@ -164,7 +183,6 @@ export default function Tanquesitos() {
         </div>
       )}
 
-      {/* Modal de configuración */}
       {modalVisible && (
         <div className="modal-overlay" onClick={cerrarModal}>
           <div className="modal modal-sky" onClick={(event) => event.stopPropagation()}>
@@ -192,6 +210,30 @@ export default function Tanquesitos() {
                 >
                   Teclas
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modal === "teclas" && (
+        <div className="modal-overlay">
+          <div className="modal modal-sky teclas">
+            <h2 className="modal-title">Configuracion</h2>
+            <div className="modal-content">
+              <div className="tabs">
+                <span className="tab" onClick={() => setModal("general")}>General</span>
+                <span className="tab" onClick={() => setModal("sonido")}>Sonido</span>
+                <span className="tab active" onClick={() => setModal("teclas")}>Teclas</span>
+              </div>
+
+              <div className="keys-grid">
+                {teclas.map(([tecla, accion], i) => (
+                  <div key={i} className="key-row">
+                    <span className="key-label">{tecla}</span>
+                    {accion}
+                  </div>
+                ))}
               </div>
 
               {renderTabContent()}
