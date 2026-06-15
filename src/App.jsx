@@ -1,8 +1,10 @@
 import { useState } from "react";
+import Game from "./mapa/mapa";
 
 export default function Tanquesitos() {
-  const [modal, setModal] = useState(null); // null | 'diseno' | 'general' | 'sonido' | 'teclas'
+  const [modal, setModal] = useState(null);
   const [usuario, setUsuario] = useState("");
+  const [enJuego, setEnJuego] = useState(false);
 
   const colores = [
     "#29b6e8", "#e8392e", "#3aa845", "#f0d018", "#f29420", "#e23ec0",
@@ -25,9 +27,12 @@ export default function Tanquesitos() {
 
   const cerrar = () => setModal(null);
 
+  if (enJuego) {
+    return <Game usuario={usuario} />;
+  }
+
   return (
     <div className="app-container">
-      {/* Pantalla 1: Login */}
       <h1 className="app-title">Tanquesitos.io</h1>
 
       <div className="login-form">
@@ -43,7 +48,7 @@ export default function Tanquesitos() {
             if (usuario.trim() === "") {
               alert("Por favor, ingresa un nombre de usuario");
             } else {
-              setModal("mapa");
+              setEnJuego(true);
             }
           }}
           className="btn btn-primary"
@@ -64,7 +69,6 @@ export default function Tanquesitos() {
         </button>
       </div>
 
-
       {modal === "general" && (
         <div className="modal-overlay">
           <div className="modal modal-sky">
@@ -75,7 +79,7 @@ export default function Tanquesitos() {
                 <span className="tab" onClick={() => setModal("sonido")}>Sonido</span>
                 <span className="tab" onClick={() => setModal("teclas")}>Teclas</span>
               </div>
-              
+
               <h3 style={{ marginTop: "20px" }}>Diseña tu Tanque</h3>
               <div className="colors-grid">
                 {colores.map((c, i) => (
@@ -106,7 +110,6 @@ export default function Tanquesitos() {
         </div>
       )}
 
-      {/* Pantalla 3: Configuracion Sonido */}
       {modal === "sonido" && (
         <div className="modal-overlay">
           <div className="modal modal-sky">
@@ -140,7 +143,6 @@ export default function Tanquesitos() {
         </div>
       )}
 
-      {/* Pantalla 4: Configuracion Teclas */}
       {modal === "teclas" && (
         <div className="modal-overlay">
           <div className="modal modal-sky teclas">
