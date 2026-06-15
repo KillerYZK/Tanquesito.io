@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Game from "./mapa/mapa";
-import { useEffect, useState } from "react";
 
 // Componente principal de la aplicación
 export default function Tanquesitos() {
@@ -43,8 +42,7 @@ export default function Tanquesitos() {
     ["[D]", "  Mover hacia la derecha"],
     ["[S]", "  Mover hacia atrás"],
     ["[A]", "  Mover hacia la izquierda"],
-    ["[LMB]", "  Disparar"],
-  ];
+    ["[LMB]", "  Disparar"];
 
   // Maneja el cierre del modal con la tecla Escape
   useEffect(() => {
