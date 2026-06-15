@@ -1,23 +1,33 @@
 import { useRef, useEffect } from "react";
+import { db } from "../firebase";
+import {
+  ref,
+  set,
+  onValue,
+  onDisconnect,
+  remove,
+  update as fbUpdate,
+  push,
+} from "firebase/database";
 
-// --- Configuración ---
 const PLAYER_SPEED = 4;
 const PLAYER_RADIUS = 20;
 const BULLET_SPEED = 8;
 const BULLET_RADIUS = 5;
-const FIRE_COOLDOWN = 250; // ms
+const FIRE_COOLDOWN = 250;
 
-export default function Game() {
+export default function Game({ usuario }) {
   const canvasRef = useRef(null);
 
-  // Estado del juego en un ref (evita re-renders de React por frame)
   const stateRef = useRef({
     player: { x: 0, y: 0, angle: 0, hp: 100 },
     keys: {},
     mouse: { x: 0, y: 0, down: false },
-    bullets: [],
     shapes: [],
+    otherPlayers: {},
+    remoteBullets: [],
     lastShot: 0,
+    playerId: null,
   });
 
   useEffect(() => {
@@ -32,21 +42,67 @@ export default function Game() {
     resize();
     window.addEventListener("resize", resize);
 
-    // Centrar jugador al inicio
-    state.player.x = 0;
-    state.player.y = 0;
+    state.player.x = (Math.random() - 0.5) * 1000;
+    state.player.y = (Math.random() - 0.5) * 1000;
 
-    // --- Generar formas iniciales (cuadrados rojos simples) ---
-    for (let i = 0; i < 15; i++) {
-      state.shapes.push({
-        x: (Math.random() - 0.5) * 2000,
-        y: (Math.random() - 0.5) * 2000,
-        size: 30,
-        hp: 30,
-        maxHp: 30,
-        rotation: Math.random() * Math.PI,
+    // --- Registrar jugador en Firebase ---
+    const playersRef = ref(db, "players");
+    const newPlayerRef = push(playersRef);
+    state.playerId = newPlayerRef.key;
+
+    set(newPlayerRef, {
+      nombre: usuario,
+      x: state.player.x,
+      y: state.player.y,
+      angle: 0,
+      hp: 100,
+    });
+
+    onDisconnect(newPlayerRef).remove();
+
+    const unsubscribePlayers = onValue(playersRef, (snapshot) => {
+      const data = snapshot.val() || {};
+      const others = {};
+      Object.keys(data).forEach((id) => {
+        if (id !== state.playerId) others[id] = data[id];
       });
-    }
+      state.otherPlayers = others;
+    });
+
+    // --- Shapes compartidas ---
+    const shapesRef = ref(db, "shapes");
+    onValue(
+      shapesRef,
+      (snapshot) => {
+        if (!snapshot.exists()) {
+          const initialShapes = {};
+          for (let i = 0; i < 15; i++) {
+            initialShapes[`shape_${i}`] = {
+              x: (Math.random() - 0.5) * 2000,
+              y: (Math.random() - 0.5) * 2000,
+              size: 30,
+              hp: 30,
+              maxHp: 30,
+              rotation: Math.random() * Math.PI,
+            };
+          }
+          set(shapesRef, initialShapes);
+        }
+      },
+      { onlyOnce: true }
+    );
+
+    const unsubscribeShapes = onValue(shapesRef, (snapshot) => {
+      const data = snapshot.val() || {};
+      state.shapes = Object.keys(data).map((id) => ({ id, ...data[id] }));
+    });
+
+    // --- Balas compartidas ---
+    const bulletsRef = ref(db, "bullets");
+    const unsubscribeBullets = onValue(bulletsRef, (snapshot) => {
+      const data = snapshot.val() || {};
+      state.remoteBullets = Object.keys(data).map((id) => ({ id, ...data[id] }));
+    });
 
     // --- Inputs ---
     function onKeyDown(e) {
@@ -74,13 +130,14 @@ export default function Game() {
 
     let animationId;
     let lastTime = performance.now();
+    let lastSync = 0;
+    const SYNC_INTERVAL = 50;
 
     function update(dt) {
-      const { player, keys, mouse, bullets, shapes } = state;
+      const { player, keys, mouse, shapes, remoteBullets } = state;
 
-      // Movimiento del jugador (WASD)
-      let dx = 0;
-      let dy = 0;
+      let dx = 0,
+        dy = 0;
       if (keys["w"]) dy -= 1;
       if (keys["s"]) dy += 1;
       if (keys["a"]) dx -= 1;
@@ -92,61 +149,72 @@ export default function Game() {
         player.y += (dy / len) * PLAYER_SPEED;
       }
 
-      // Ángulo del cañón hacia el mouse (centro de pantalla = jugador)
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
       player.angle = Math.atan2(mouse.y - centerY, mouse.x - centerX);
 
-      // Disparo
       const now = performance.now();
       if (mouse.down && now - state.lastShot > FIRE_COOLDOWN) {
-        bullets.push({
+        const newBulletRef = push(bulletsRef);
+        set(newBulletRef, {
           x: player.x + Math.cos(player.angle) * PLAYER_RADIUS,
           y: player.y + Math.sin(player.angle) * PLAYER_RADIUS,
           vx: Math.cos(player.angle) * BULLET_SPEED,
           vy: Math.sin(player.angle) * BULLET_SPEED,
-          life: 60, // frames de vida
+          life: 60,
+          owner: state.playerId,
         });
         state.lastShot = now;
       }
 
-      // Actualizar balas
-      for (let i = bullets.length - 1; i >= 0; i--) {
-        const b = bullets[i];
-        b.x += b.vx;
-        b.y += b.vy;
-        b.life -= 1;
-        if (b.life <= 0) {
-          bullets.splice(i, 1);
-          continue;
-        }
+      // Cada cliente gestiona solo las balas que disparó
+      remoteBullets.forEach((b) => {
+        if (b.owner !== state.playerId) return;
 
-        // Colisión con shapes
-        for (let j = shapes.length - 1; j >= 0; j--) {
-          const s = shapes[j];
-          const dist = Math.hypot(b.x - s.x, b.y - s.y);
+        let nx = b.x + b.vx;
+        let ny = b.y + b.vy;
+        let nlife = b.life - 1;
+        let hit = false;
+
+        for (const s of shapes) {
+          const dist = Math.hypot(nx - s.x, ny - s.y);
           if (dist < BULLET_RADIUS + s.size / 2) {
-            s.hp -= 10;
-            bullets.splice(i, 1);
-            if (s.hp <= 0) {
-              shapes.splice(j, 1);
+            const newHp = s.hp - 10;
+            if (newHp <= 0) {
+              remove(ref(db, `shapes/${s.id}`));
+            } else {
+              fbUpdate(ref(db, `shapes/${s.id}`), { hp: newHp });
             }
+            hit = true;
             break;
           }
         }
+
+        if (nlife <= 0 || hit) {
+          remove(ref(db, `bullets/${b.id}`));
+        } else {
+          fbUpdate(ref(db, `bullets/${b.id}`), { x: nx, y: ny, life: nlife });
+        }
+      });
+
+      if (now - lastSync > SYNC_INTERVAL) {
+        fbUpdate(ref(db, `players/${state.playerId}`), {
+          x: player.x,
+          y: player.y,
+          angle: player.angle,
+        });
+        lastSync = now;
       }
     }
 
     function draw() {
-      const { player, bullets, shapes } = state;
+      const { player, shapes, otherPlayers, remoteBullets } = state;
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
 
-      // Fondo
       ctx.fillStyle = "#cdcdcd";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Grid (efecto de movimiento)
       ctx.strokeStyle = "#bbbbbb";
       ctx.lineWidth = 1;
       const gridSize = 50;
@@ -166,11 +234,9 @@ export default function Game() {
         ctx.stroke();
       }
 
-      // Trasladar mundo según la cámara (jugador en el centro)
       ctx.save();
       ctx.translate(centerX - player.x, centerY - player.y);
 
-      // Shapes (cuadrados)
       shapes.forEach((s) => {
         ctx.save();
         ctx.translate(s.x, s.y);
@@ -183,26 +249,42 @@ export default function Game() {
         ctx.restore();
       });
 
-      // Balas
       ctx.fillStyle = "#9aa7d1";
-      bullets.forEach((b) => {
+      remoteBullets.forEach((b) => {
         ctx.beginPath();
         ctx.arc(b.x, b.y, BULLET_RADIUS, 0, Math.PI * 2);
         ctx.fill();
       });
 
-      // Jugador (cuerpo)
+      Object.values(otherPlayers).forEach((p) => {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle || 0);
+        ctx.fillStyle = "#888888";
+        ctx.fillRect(0, -6, 35, 12);
+        ctx.restore();
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, PLAYER_RADIUS, 0, Math.PI * 2);
+        ctx.fillStyle = "#e8392e";
+        ctx.fill();
+        ctx.strokeStyle = "#a8231e";
+        ctx.lineWidth = 4;
+        ctx.stroke();
+
+        ctx.fillStyle = "#000";
+        ctx.font = "12px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(p.nombre || "Jugador", p.x, p.y - PLAYER_RADIUS - 8);
+      });
+
       ctx.save();
       ctx.translate(player.x, player.y);
-
-      // Cañón
       ctx.rotate(player.angle);
       ctx.fillStyle = "#888888";
       ctx.fillRect(0, -6, 35, 12);
-
       ctx.restore();
 
-      // Cuerpo del jugador (círculo, encima del cañón)
       ctx.beginPath();
       ctx.arc(player.x, player.y, PLAYER_RADIUS, 0, Math.PI * 2);
       ctx.fillStyle = "#00b2e1";
@@ -210,6 +292,11 @@ export default function Game() {
       ctx.strokeStyle = "#0089b3";
       ctx.lineWidth = 4;
       ctx.stroke();
+
+      ctx.fillStyle = "#000";
+      ctx.font = "12px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(usuario, player.x, player.y - PLAYER_RADIUS - 8);
 
       ctx.restore();
     }
@@ -232,8 +319,12 @@ export default function Game() {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mousedown", onMouseDown);
       window.removeEventListener("mouseup", onMouseUp);
+      unsubscribePlayers();
+      unsubscribeShapes();
+      unsubscribeBullets();
+      remove(ref(db, `players/${state.playerId}`));
     };
-  }, []);
+  }, [usuario]);
 
   return (
     <canvas
