@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 
+// Componente principal de la aplicación
 export default function Tanquesitos() {
+  // Estados principales del componente
   const [modalVisible, setModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
   const [usuario, setUsuario] = useState("");
@@ -8,6 +10,7 @@ export default function Tanquesitos() {
   const [soundVolume, setSoundVolume] = useState(80);
   const [musicVolume, setMusicVolume] = useState(70);
 
+  // Lista de colores disponibles para el tanque
   const colores = [
     "#29b6e8", "#e8392e", "#3aa845", "#f0d018", "#f29420", "#e23ec0",
     "#2255e8", "#c0231e", "#1f8038", "#c4b418", "#9a5a18", "#7a1ec0",
@@ -22,6 +25,7 @@ export default function Tanquesitos() {
     ["[LMB]", "  Disparar"],
   ];
 
+  // Maneja el cierre del modal con la tecla Escape
   useEffect(() => {
     if (!modalVisible) return;
 
@@ -42,6 +46,7 @@ export default function Tanquesitos() {
 
   const cerrarModal = () => setModalVisible(false);
 
+  // Renderiza el contenido según la pestaña activa
   const renderTabContent = () => {
     if (activeTab === "general") {
       return (
@@ -118,9 +123,10 @@ export default function Tanquesitos() {
 
   return (
     <div className="app-container">
-      {/* Pantalla 1: Login */}
+      {/* Encabezado principal */}
       <h1 className="app-title">Tanquesitos.io</h1>
 
+      {/* Formulario de entrada de usuario */}
       <div className="login-form">
         <label>Nombre de Usuario</label>
         <input
@@ -143,6 +149,7 @@ export default function Tanquesitos() {
         </button>
       </div>
 
+      {/* Botones de opciones fuera del modal */}
       {!modalVisible && (
         <div className="options-container">
           <button type="button" onClick={() => abrirModal("general")} className="btn-option">
@@ -157,6 +164,7 @@ export default function Tanquesitos() {
         </div>
       )}
 
+      {/* Modal de configuración */}
       {modalVisible && (
         <div className="modal-overlay" onClick={cerrarModal}>
           <div className="modal modal-sky" onClick={(event) => event.stopPropagation()}>
