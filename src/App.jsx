@@ -1,8 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function Tanquesitos() {
-  const [modal, setModal] = useState(null); // null | 'diseno' | 'general' | 'sonido' | 'teclas'
+  const [modalVisible, setModalVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState("general");
   const [usuario, setUsuario] = useState("");
+  const [selectedColor, setSelectedColor] = useState("#29b6e8");
+  const [soundVolume, setSoundVolume] = useState(80);
+  const [musicVolume, setMusicVolume] = useState(70);
 
   const colores = [
     "#29b6e8", "#e8392e", "#3aa845", "#f0d018", "#f29420", "#e23ec0",
@@ -11,19 +15,106 @@ export default function Tanquesitos() {
   ];
 
   const teclas = [
-    ["W", "Mover hacia adelante"],
-    ["D", "Mover hacia a la derecha"],
-    ["S", "Mover hacia atras"],
-    ["LMB", "Disparar"],
-    ["A", "Mover hacia a la izquierda"],
-    ["ESC", "Salir al menu"],
-    ["Z", "Stats"],
-    ["M", "Mapa"],
-    ["Tab", "Lista de jugadores"],
-    ["V", "Chat"],
+    ["[W]", "  Mover hacia adelante"],
+    ["[D]", "  Mover hacia la derecha"],
+    ["[S]", "  Mover hacia atrás"],
+    ["[A]", "  Mover hacia la izquierda"],
+    ["[LMB]", "  Disparar"],
   ];
 
-  const cerrar = () => setModal(null);
+  useEffect(() => {
+    if (!modalVisible) return;
+
+    const handleEsc = (event) => {
+      if (event.key === "Escape") {
+        setModalVisible(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [modalVisible]);
+
+  const abrirModal = (tab) => {
+    setActiveTab(tab);
+    setModalVisible(true);
+  };
+
+  const cerrarModal = () => setModalVisible(false);
+
+  const renderTabContent = () => {
+    if (activeTab === "general") {
+      return (
+        <>
+          <h3 className="modal-subtitle">Diseña tu tanque</h3>
+          <div className="colors-grid">
+            {colores.map((color, index) => (
+              <button
+                key={index}
+                type="button"
+                className={`color-box ${selectedColor === color ? "selected" : ""}`}
+                style={{ backgroundColor: color }}
+                onClick={() => setSelectedColor(color)}
+                aria-label={`Seleccionar color ${color}`}
+              />
+            ))}
+          </div>
+          <div className="tank-preview">
+            <div className="tank-display" style={{ backgroundColor: selectedColor }} />
+          </div>
+
+          <h3 className="modal-subtitle">Otras configuraciones</h3>
+          <div className="options-grid">
+            <div className="option-box">Dificultad</div>
+            <div className="option-box">Velocidad</div>
+            <div className="option-box">Distancia de visión</div>
+            <div className="option-box">Brillo</div>
+          </div>
+        </>
+      );
+    }
+
+    if (activeTab === "sonido") {
+      return (
+        <>
+          <div className="slider-container">
+            <label className="slider-label">Efectos de sonido</label>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={soundVolume}
+              onChange={(e) => setSoundVolume(Number(e.target.value))}
+            />
+            <div className="slider-value">{soundVolume}%</div>
+          </div>
+
+          <div className="slider-container">
+            <label className="slider-label">Música</label>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={musicVolume}
+              onChange={(e) => setMusicVolume(Number(e.target.value))}
+            />
+            <div className="slider-value">{musicVolume}%</div>
+          </div>
+        </>
+      );
+    }
+
+    return (
+      <div className="keys-grid">
+        {teclas.map(([tecla, accion], index) => (
+          <div key={index} className="key-row">
+            <span className="key-label">{tecla}</span>
+            <span>{accion}</span>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="app-container">
@@ -43,7 +134,7 @@ export default function Tanquesitos() {
             if (usuario.trim() === "") {
               alert("Por favor, ingresa un nombre de usuario");
             } else {
-              setModal("mapa");
+              abrirModal("general");
             }
           }}
           className="btn btn-primary"
@@ -52,117 +143,53 @@ export default function Tanquesitos() {
         </button>
       </div>
 
-      <div className="options-container">
-        <button onClick={() => setModal("general")} className="btn-option">
-          Configuracion General
-        </button>
-        <button onClick={() => setModal("sonido")} className="btn-option">
-          Sonido
-        </button>
-        <button onClick={() => setModal("teclas")} className="btn-option">
-          Teclas
-        </button>
-      </div>
-
-
-      {modal === "general" && (
-        <div className="modal-overlay">
-          <div className="modal modal-sky">
-            <h2 className="modal-title">Configuracion</h2>
-            <div className="modal-content">
-              <div className="tabs">
-                <span className="tab active" onClick={() => setModal("general")}>General</span>
-                <span className="tab" onClick={() => setModal("sonido")}>Sonido</span>
-                <span className="tab" onClick={() => setModal("teclas")}>Teclas</span>
-              </div>
-              
-              <h3 style={{ marginTop: "20px" }}>Diseña tu Tanque</h3>
-              <div className="colors-grid">
-                {colores.map((c, i) => (
-                  <div key={i} className="color-box" style={{ backgroundColor: c }} />
-                ))}
-              </div>
-              <div className="tank-preview">
-                <div className="tank-display" />
-              </div>
-
-              <h3 style={{ marginTop: "20px" }}>Otras Configuraciones</h3>
-              <div className="colors-grid" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
-                <div className="color-box" style={{ height: "28px", backgroundColor: "#d1d5db" }} />
-                <div className="color-box" style={{ height: "28px", backgroundColor: "#d1d5db" }} />
-                <div className="color-box" style={{ height: "28px", backgroundColor: "#d1d5db" }} />
-                <div className="color-box" style={{ height: "28px", backgroundColor: "#d1d5db" }} />
-                <div className="color-box" style={{ height: "28px", backgroundColor: "#d1d5db" }} />
-                <div />
-                <div className="color-box" style={{ height: "28px", backgroundColor: "#d1d5db" }} />
-              </div>
-              <div className="action-button-container">
-                <button onClick={cerrar} className="btn-accept">
-                  Aceptar
-                </button>
-              </div>
-            </div>
-          </div>
+      {!modalVisible && (
+        <div className="options-container">
+          <button type="button" onClick={() => abrirModal("general")} className="btn-option">
+            Configuración
+          </button>
+          <button type="button" onClick={() => abrirModal("sonido")} className="btn-option">
+            Sonido
+          </button>
+          <button type="button" onClick={() => abrirModal("teclas")} className="btn-option">
+            Teclas
+          </button>
         </div>
       )}
 
-      {/* Pantalla 3: Configuracion Sonido */}
-      {modal === "sonido" && (
-        <div className="modal-overlay">
-          <div className="modal modal-sky">
-            <h2 className="modal-title">Configuracion</h2>
+      {modalVisible && (
+        <div className="modal-overlay" onClick={cerrarModal}>
+          <div className="modal modal-sky" onClick={(event) => event.stopPropagation()}>
+            <h2 className="modal-title">Configuración</h2>
             <div className="modal-content">
               <div className="tabs">
-                <span className="tab" onClick={() => setModal("general")}>General</span>
-                <span className="tab active" onClick={() => setModal("sonido")}>Sonido</span>
-                <span className="tab" onClick={() => setModal("teclas")}>Teclas</span>
-              </div>
-
-              <label className="slider-label">Sonido</label>
-              <div
-                className="slider"
-                style={{ background: "linear-gradient(to right, #639922 80%, #ccc 80%)" }}
-              />
-
-              <label className="slider-label">Musica</label>
-              <div
-                className="slider"
-                style={{ background: "linear-gradient(to right, #639922 80%, #ccc 80%)" }}
-              />
-
-              <div className="action-button-container">
-                <button onClick={cerrar} className="btn-accept">
-                  Aceptar
+                <button
+                  type="button"
+                  className={`tab ${activeTab === "general" ? "active" : ""}`}
+                  onClick={() => setActiveTab("general")}
+                >
+                  General
+                </button>
+                <button
+                  type="button"
+                  className={`tab ${activeTab === "sonido" ? "active" : ""}`}
+                  onClick={() => setActiveTab("sonido")}
+                >
+                  Sonido
+                </button>
+                <button
+                  type="button"
+                  className={`tab ${activeTab === "teclas" ? "active" : ""}`}
+                  onClick={() => setActiveTab("teclas")}
+                >
+                  Teclas
                 </button>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Pantalla 4: Configuracion Teclas */}
-      {modal === "teclas" && (
-        <div className="modal-overlay">
-          <div className="modal modal-sky teclas">
-            <h2 className="modal-title">Configuracion</h2>
-            <div className="modal-content">
-              <div className="tabs">
-                <span className="tab" onClick={() => setModal("general")}>General</span>
-                <span className="tab" onClick={() => setModal("sonido")}>Sonido</span>
-                <span className="tab active" onClick={() => setModal("teclas")}>Teclas</span>
-              </div>
-
-              <div className="keys-grid">
-                {teclas.map(([tecla, accion], i) => (
-                  <div key={i} className="key-row">
-                    <span className="key-label">{tecla}</span>
-                    {accion}
-                  </div>
-                ))}
-              </div>
+              {renderTabContent()}
 
               <div className="action-button-container">
-                <button onClick={cerrar} className="btn-accept">
+                <button onClick={cerrarModal} className="btn-accept">
                   Aceptar
                 </button>
               </div>
