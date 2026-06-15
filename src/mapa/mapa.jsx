@@ -1,17 +1,29 @@
 import { useRef, useEffect } from "react";
-import { db, ref, set, onValue, onDisconnect, remove, fbUpdate, push } from "../firebase";
+import { db } from "../firebase";
+import {
+  ref,
+  set,
+  onValue,
+  onDisconnect,
+  remove,
+  update as fbUpdate,
+  push,
+} from "firebase/database";
 
 const PLAYER_SPEED = 4;
 const PLAYER_RADIUS = 20;
 const BULLET_SPEED = 8;
 const BULLET_RADIUS = 5;
 const FIRE_COOLDOWN = 250;
+const MAX_HP = 100;
+const BULLET_DAMAGE = 10;
+const RESPAWN_TIME = 3000; // ms
 
-export default function Game({ usuario }) {
+export default function Game({ usuario, color = "#00b2e1" }) {
   const canvasRef = useRef(null);
 
   const stateRef = useRef({
-    player: { x: 0, y: 0, angle: 0, hp: 100 },
+    player: { x: 0, y: 0, angle: 0, hp: MAX_HP, alive: true, respawnAt: 0 },
     keys: {},
     mouse: { x: 0, y: 0, down: false },
     shapes: [],
@@ -33,8 +45,16 @@ export default function Game({ usuario }) {
     resize();
     window.addEventListener("resize", resize);
 
-    state.player.x = (Math.random() - 0.5) * 1000;
-    state.player.y = (Math.random() - 0.5) * 1000;
+    function spawnPosition() {
+      return {
+        x: (Math.random() - 0.5) * 1000,
+        y: (Math.random() - 0.5) * 1000,
+      };
+    }
+
+    const start = spawnPosition();
+    state.player.x = start.x;
+    state.player.y = start.y;
 
     // --- Registrar jugador en Firebase ---
     const playersRef = ref(db, "players");
@@ -46,7 +66,8 @@ export default function Game({ usuario }) {
       x: state.player.x,
       y: state.player.y,
       angle: 0,
-      hp: 100,
+      hp: MAX_HP,
+      color: color,
     });
 
     onDisconnect(newPlayerRef).remove();
@@ -124,9 +145,33 @@ export default function Game({ usuario }) {
     let lastSync = 0;
     const SYNC_INTERVAL = 50;
 
+    function respawnPlayer() {
+      const pos = spawnPosition();
+      state.player.x = pos.x;
+      state.player.y = pos.y;
+      state.player.hp = MAX_HP;
+      state.player.alive = true;
+      fbUpdate(ref(db, `players/${state.playerId}`), {
+        x: pos.x,
+        y: pos.y,
+        hp: MAX_HP,
+      });
+    }
+
     function update(dt) {
       const { player, keys, mouse, shapes, remoteBullets } = state;
 
+      const now = performance.now();
+
+      // --- Si está muerto, esperar respawn ---
+      if (!player.alive) {
+        if (now >= player.respawnAt) {
+          respawnPlayer();
+        }
+        return;
+      }
+
+      // Movimiento del jugador (WASD)
       let dx = 0,
         dy = 0;
       if (keys["w"]) dy -= 1;
@@ -140,11 +185,12 @@ export default function Game({ usuario }) {
         player.y += (dy / len) * PLAYER_SPEED;
       }
 
+      // Ángulo del cañón hacia el mouse
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
       player.angle = Math.atan2(mouse.y - centerY, mouse.x - centerX);
 
-      const now = performance.now();
+      // Disparo
       if (mouse.down && now - state.lastShot > FIRE_COOLDOWN) {
         const newBulletRef = push(bulletsRef);
         set(newBulletRef, {
@@ -158,7 +204,30 @@ export default function Game({ usuario }) {
         state.lastShot = now;
       }
 
-      // Cada cliente gestiona solo las balas que disparó
+      // --- Recibir daño de balas enemigas ---
+      for (let i = remoteBullets.length - 1; i >= 0; i--) {
+        const b = remoteBullets[i];
+        if (b.owner === state.playerId) continue; // no me daño a mí mismo
+
+        const dist = Math.hypot(b.x - player.x, b.y - player.y);
+        if (dist < BULLET_RADIUS + PLAYER_RADIUS) {
+          // Solo quien recibe el golpe gestiona su propia HP
+          player.hp -= BULLET_DAMAGE;
+          remove(ref(db, `bullets/${b.id}`));
+
+          if (player.hp <= 0) {
+            player.hp = 0;
+            player.alive = false;
+            player.respawnAt = now + RESPAWN_TIME;
+            fbUpdate(ref(db, `players/${state.playerId}`), { hp: 0 });
+          } else {
+            fbUpdate(ref(db, `players/${state.playerId}`), { hp: player.hp });
+          }
+          break;
+        }
+      }
+
+      // --- Cada cliente gestiona el movimiento de las balas que disparó ---
       remoteBullets.forEach((b) => {
         if (b.owner !== state.playerId) return;
 
@@ -167,6 +236,7 @@ export default function Game({ usuario }) {
         let nlife = b.life - 1;
         let hit = false;
 
+        // Colisión con shapes
         for (const s of shapes) {
           const dist = Math.hypot(nx - s.x, ny - s.y);
           if (dist < BULLET_RADIUS + s.size / 2) {
@@ -188,6 +258,7 @@ export default function Game({ usuario }) {
         }
       });
 
+      // Sincronizar posición propia
       if (now - lastSync > SYNC_INTERVAL) {
         fbUpdate(ref(db, `players/${state.playerId}`), {
           x: player.x,
@@ -198,14 +269,42 @@ export default function Game({ usuario }) {
       }
     }
 
+    // --- Dibuja una barra de vida arriba de un tanque ---
+    function drawHealthBar(x, y, hp, maxHp) {
+      const barWidth = 50;
+      const barHeight = 6;
+      const pct = Math.max(0, hp / maxHp);
+      const barX = x - barWidth / 2;
+      const barY = y - PLAYER_RADIUS - 26;
+
+      // Fondo
+      ctx.fillStyle = "#333333";
+      ctx.fillRect(barX, barY, barWidth, barHeight);
+
+      // Relleno según vida
+      let fillColor = "#4caf50";
+      if (pct < 0.6) fillColor = "#f0d018";
+      if (pct < 0.3) fillColor = "#e8392e";
+
+      ctx.fillStyle = fillColor;
+      ctx.fillRect(barX, barY, barWidth * pct, barHeight);
+
+      // Borde
+      ctx.strokeStyle = "#000000";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(barX, barY, barWidth, barHeight);
+    }
+
     function draw() {
       const { player, shapes, otherPlayers, remoteBullets } = state;
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
 
+      // Fondo
       ctx.fillStyle = "#cdcdcd";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+      // Grid
       ctx.strokeStyle = "#bbbbbb";
       ctx.lineWidth = 1;
       const gridSize = 50;
@@ -228,6 +327,7 @@ export default function Game({ usuario }) {
       ctx.save();
       ctx.translate(centerX - player.x, centerY - player.y);
 
+      // Shapes
       shapes.forEach((s) => {
         ctx.save();
         ctx.translate(s.x, s.y);
@@ -240,14 +340,30 @@ export default function Game({ usuario }) {
         ctx.restore();
       });
 
+      // Balas
       ctx.fillStyle = "#9aa7d1";
       remoteBullets.forEach((b) => {
         ctx.beginPath();
         ctx.arc(b.x, b.y, BULLET_RADIUS, 0, Math.PI * 2);
         ctx.fill();
       });
+      //Info de daño
+      remoteBullets.forEach((b) => {
+        if (b.damage) {
+          ctx.fillStyle = "#ff0000";
+          ctx.font = "12px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(`-${b.damage}`, b.x, b.y - BULLET_RADIUS - 4);
+        }
+      });
 
+      // Otros jugadores
       Object.values(otherPlayers).forEach((p) => {
+        const playerColor = p.color || "#e8392e";
+        const pHp = p.hp ?? MAX_HP;
+
+        if (pHp <= 0) return; // no dibujar jugadores muertos
+
         ctx.save();
         ctx.translate(p.x, p.y);
         ctx.rotate(p.angle || 0);
@@ -257,39 +373,93 @@ export default function Game({ usuario }) {
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, PLAYER_RADIUS, 0, Math.PI * 2);
-        ctx.fillStyle = "#e8392e";
+        ctx.fillStyle = playerColor;
         ctx.fill();
-        ctx.strokeStyle = "#a8231e";
+        ctx.strokeStyle = "#000000";
         ctx.lineWidth = 4;
         ctx.stroke();
 
         ctx.fillStyle = "#000";
         ctx.font = "12px sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText(p.nombre || "Jugador", p.x, p.y - PLAYER_RADIUS - 8);
+        ctx.fillText(p.nombre || "Jugador", p.x, p.y - PLAYER_RADIUS - 32);
+
+        drawHealthBar(p.x, p.y, pHp, MAX_HP);
       });
 
-      ctx.save();
-      ctx.translate(player.x, player.y);
-      ctx.rotate(player.angle);
-      ctx.fillStyle = "#888888";
-      ctx.fillRect(0, -6, 35, 12);
+      // Jugador local (solo si está vivo)
+      if (player.alive) {
+        // Cañón
+        ctx.save();
+        ctx.translate(player.x, player.y);
+        ctx.rotate(player.angle);
+        ctx.fillStyle = "#888888";
+        ctx.fillRect(0, -6, 35, 12);
+        ctx.restore();
+
+        // Cuerpo
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, PLAYER_RADIUS, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.strokeStyle = "#000000";
+        ctx.lineWidth = 4;
+        ctx.stroke();
+
+        // Nombre
+        ctx.fillStyle = "#000";
+        ctx.font = "12px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(usuario, player.x, player.y - PLAYER_RADIUS - 32);
+
+        // Barra de vida propia
+        drawHealthBar(player.x, player.y, player.hp, MAX_HP);
+      }
+
       ctx.restore();
 
-      ctx.beginPath();
-      ctx.arc(player.x, player.y, PLAYER_RADIUS, 0, Math.PI * 2);
-      ctx.fillStyle = "#00b2e1";
-      ctx.fill();
-      ctx.strokeStyle = "#0089b3";
-      ctx.lineWidth = 4;
-      ctx.stroke();
+      // --- HUD (fijo en pantalla, no se traslada con la cámara) ---
+      const hudX = 20;
+      const hudY = canvas.height - 40;
 
-      ctx.fillStyle = "#000";
-      ctx.font = "12px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(usuario, player.x, player.y - PLAYER_RADIUS - 8);
+      if (player.alive) {
+        // Barra de vida grande en HUD
+        const hudBarWidth = 200;
+        const hudBarHeight = 20;
+        const pct = Math.max(0, player.hp / MAX_HP);
 
-      ctx.restore();
+        ctx.fillStyle = "#333333";
+        ctx.fillRect(hudX, hudY, hudBarWidth, hudBarHeight);
+
+        let fillColor = "#4caf50";
+        if (pct < 0.6) fillColor = "#f0d018";
+        if (pct < 0.3) fillColor = "#e8392e";
+
+        ctx.fillStyle = fillColor;
+        ctx.fillRect(hudX, hudY, hudBarWidth * pct, hudBarHeight);
+
+        ctx.strokeStyle = "#000000";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(hudX, hudY, hudBarWidth, hudBarHeight);
+
+        ctx.fillStyle = "#000";
+        ctx.font = "bold 14px sans-serif";
+        ctx.textAlign = "left";
+        ctx.fillText(`HP: ${player.hp} / ${MAX_HP}`, hudX, hudY - 8);
+      } else {
+        // Mensaje de respawn
+        const remaining = Math.max(0, Math.ceil((player.respawnAt - performance.now()) / 1000));
+        ctx.fillStyle = "rgba(0,0,0,0.6)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 36px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("Has sido destruido", canvas.width / 2, canvas.height / 2 - 20);
+
+        ctx.font = "20px sans-serif";
+        ctx.fillText(`Reapareciendo en ${remaining}s...`, canvas.width / 2, canvas.height / 2 + 20);
+      }
     }
 
     function loop(time) {
@@ -315,7 +485,7 @@ export default function Game({ usuario }) {
       unsubscribeBullets();
       remove(ref(db, `players/${state.playerId}`));
     };
-  }, [usuario]);
+  }, [usuario, color]);
 
   return (
     <canvas

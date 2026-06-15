@@ -124,7 +124,7 @@ export default function Tanquesitos() {
   };
 
   if (enJuego) {
-    return <Game usuario={usuario} />;
+    return <Game usuario={usuario} color={selectedColor} />;
   }
 
   return (
