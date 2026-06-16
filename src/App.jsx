@@ -70,13 +70,8 @@ export default function Tanquesitos() {
             <div className="tank-display" style={{ backgroundColor: selectedColor }} />
           </div>
 
-          <h3 className="modal-subtitle">Otras configuraciones</h3>
-          <div className="options-grid">
-            <div className="option-box">Dificultad</div>
-            <div className="option-box">Velocidad</div>
-            <div className="option-box">Distancia de visión</div>
-            <div className="option-box">Brillo</div>
-          </div>
+
+          
         </>
       );
     }
