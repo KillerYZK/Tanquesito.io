@@ -2,6 +2,7 @@
 import Game from "./mapa/mapa";
 import Login from "./Login";
 import Register from "./Register";
+import "./app.css";
 
 export default function Tanquesitos() {
   const [pantalla, setPantalla] = useState("login"); // "login" | "register" | "config" | "juego"
