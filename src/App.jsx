@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from "react";
+﻿import { useState, useEffect } from "react";
 import Game from "./mapa/mapa";
 
 export default function Tanquesitos() {
-  const [modal, setModal] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
   const [usuario, setUsuario] = useState("");
@@ -22,20 +21,13 @@ export default function Tanquesitos() {
     ["D", "Mover hacia a la derecha"],
     ["S", "Mover hacia atras"],
     ["LMB", "Disparar"],
-    ["A", "Mover hacia a la izquierda"],
+    ["A", "Mover hacia la izquierda"],
     ["ESC", "Salir al menu"],
     ["Z", "Stats"],
     ["M", "Mapa"],
     ["Tab", "Lista de jugadores"],
     ["V", "Chat"],
   ];
-
-  const cerrar = () => setModal(null);
-
-  if (enJuego) {
-    return <Game usuario={usuario} />;
-  }
-
 
   useEffect(() => {
     if (!modalVisible) return;
@@ -131,6 +123,10 @@ export default function Tanquesitos() {
     );
   };
 
+  if (enJuego) {
+    return <Game usuario={usuario} color={selectedColor} />;
+  }
+
   return (
     <div className="app-container">
       <h1 className="app-title">Tanquesitos.io</h1>
@@ -149,7 +145,6 @@ export default function Tanquesitos() {
               alert("Por favor, ingresa un nombre de usuario");
             } else {
               setEnJuego(true);
-              abrirModal("general");
             }
           }}
           className="btn btn-primary"
@@ -158,17 +153,19 @@ export default function Tanquesitos() {
         </button>
       </div>
 
-      <div className="options-container">
-        <button onClick={() => setModal("general")} className="btn-option">
-          Configuracion General
-        </button>
-        <button onClick={() => setModal("sonido")} className="btn-option">
-          Sonido
-        </button>
-        <button onClick={() => setModal("teclas")} className="btn-option">
-          Teclas
-        </button>
-      </div>
+      {!modalVisible && (
+        <div className="options-container">
+          <button type="button" onClick={() => abrirModal("general")} className="btn-option">
+            Configuración
+          </button>
+          <button type="button" onClick={() => abrirModal("sonido")} className="btn-option">
+            Sonido
+          </button>
+          <button type="button" onClick={() => abrirModal("teclas")} className="btn-option">
+            Teclas
+          </button>
+        </div>
+      )}
 
       {modalVisible && (
         <div className="modal-overlay" onClick={cerrarModal}>
@@ -198,11 +195,9 @@ export default function Tanquesitos() {
                   Teclas
                 </button>
               </div>
-
               {renderTabContent()}
-
               <div className="action-button-container">
-                <button onClick={cerrarModal} className="btn-accept">
+                <button type="button" onClick={cerrarModal} className="btn-accept">
                   Aceptar
                 </button>
               </div>
