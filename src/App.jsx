@@ -1,6 +1,5 @@
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Game from "./mapa/mapa";
-import { useEffect, useState } from "react";
 
 export default function Tanquesitos() {
   const [modal, setModal] = useState(null);
@@ -36,12 +35,7 @@ export default function Tanquesitos() {
   if (enJuego) {
     return <Game usuario={usuario} />;
   }
-    ["[W]", "  Mover hacia adelante"],
-    ["[D]", "  Mover hacia la derecha"],
-    ["[S]", "  Mover hacia atrás"],
-    ["[A]", "  Mover hacia la izquierda"],
-    ["[LMB]", "  Disparar"],
-  ];
+
 
   useEffect(() => {
     if (!modalVisible) return;
@@ -176,65 +170,9 @@ export default function Tanquesitos() {
         </button>
       </div>
 
-      {modal === "general" && (
-        <div className="modal-overlay">
-          <div className="modal modal-sky">
-            <h2 className="modal-title">Configuracion</h2>
-            <div className="modal-content">
-              <div className="tabs">
-                <span className="tab active" onClick={() => setModal("general")}>General</span>
-                <span className="tab" onClick={() => setModal("sonido")}>Sonido</span>
-                <span className="tab" onClick={() => setModal("teclas")}>Teclas</span>
-              </div>
-
-              <h3 style={{ marginTop: "20px" }}>Diseña tu Tanque</h3>
-              <div className="colors-grid">
-                {colores.map((c, i) => (
-                  <div key={i} className="color-box" style={{ backgroundColor: c }} />
-                ))}
-              </div>
-              <div className="tank-preview">
-                <div className="tank-display" />
-              </div>
-
-              <h3 style={{ marginTop: "20px" }}>Otras Configuraciones</h3>
-              <div className="colors-grid" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
-                <div className="color-box" style={{ height: "28px", backgroundColor: "#d1d5db" }} />
-                <div className="color-box" style={{ height: "28px", backgroundColor: "#d1d5db" }} />
-                <div className="color-box" style={{ height: "28px", backgroundColor: "#d1d5db" }} />
-                <div className="color-box" style={{ height: "28px", backgroundColor: "#d1d5db" }} />
-                <div className="color-box" style={{ height: "28px", backgroundColor: "#d1d5db" }} />
-                <div />
-                <div className="color-box" style={{ height: "28px", backgroundColor: "#d1d5db" }} />
-              </div>
-              <div className="action-button-container">
-                <button onClick={cerrar} className="btn-accept">
-                  Aceptar
-                </button>
-              </div>
-            </div>
-          </div>
-      {!modalVisible && (
-        <div className="options-container">
-          <button type="button" onClick={() => abrirModal("general")} className="btn-option">
-            Configuración
-          </button>
-          <button type="button" onClick={() => abrirModal("sonido")} className="btn-option">
-            Sonido
-          </button>
-          <button type="button" onClick={() => abrirModal("teclas")} className="btn-option">
-            Teclas
-          </button>
-        </div>
-      )}
-
-      {modal === "sonido" && (
-        <div className="modal-overlay">
-          <div className="modal modal-sky">
-            <h2 className="modal-title">Configuracion</h2>
       {modalVisible && (
         <div className="modal-overlay" onClick={cerrarModal}>
-          <div className="modal modal-sky" onClick={(event) => event.stopPropagation()}>
+          <div className="modal modal-sky" onClick={(e) => e.stopPropagation()}>
             <h2 className="modal-title">Configuración</h2>
             <div className="modal-content">
               <div className="tabs">
@@ -259,30 +197,6 @@ export default function Tanquesitos() {
                 >
                   Teclas
                 </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {modal === "teclas" && (
-        <div className="modal-overlay">
-          <div className="modal modal-sky teclas">
-            <h2 className="modal-title">Configuracion</h2>
-            <div className="modal-content">
-              <div className="tabs">
-                <span className="tab" onClick={() => setModal("general")}>General</span>
-                <span className="tab" onClick={() => setModal("sonido")}>Sonido</span>
-                <span className="tab active" onClick={() => setModal("teclas")}>Teclas</span>
-              </div>
-
-              <div className="keys-grid">
-                {teclas.map(([tecla, accion], i) => (
-                  <div key={i} className="key-row">
-                    <span className="key-label">{tecla}</span>
-                    {accion}
-                  </div>
-                ))}
               </div>
 
               {renderTabContent()}
