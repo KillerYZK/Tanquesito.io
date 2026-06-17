@@ -1,11 +1,14 @@
-﻿import { useState, useEffect } from "react";
+﻿import { useState } from "react";
 import Game from "./mapa/mapa";
+import Login from "./Login";
+import Register from "./Register";
+import "./app.css";
 
 export default function Tanquesitos() {
+  const [pantalla, setPantalla] = useState("login"); // "login" | "register" | "config" | "juego"
   const [modalVisible, setModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
   const [usuario, setUsuario] = useState("");
-  const [enJuego, setEnJuego] = useState(false);
   const [selectedColor, setSelectedColor] = useState("#29b6e8");
   const [soundVolume, setSoundVolume] = useState(80);
   const [musicVolume, setMusicVolume] = useState(70);
@@ -29,18 +32,15 @@ export default function Tanquesitos() {
     ["V", "Chat"],
   ];
 
-  useEffect(() => {
-    if (!modalVisible) return;
+  const handleLogin = (nombre) => {
+    setUsuario(nombre);
+    setPantalla("config");
+  };
 
-    const handleEsc = (event) => {
-      if (event.key === "Escape") {
-        setModalVisible(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
-  }, [modalVisible]);
+  const handleRegistro = (nombre) => {
+    setUsuario(nombre);
+    setPantalla("config");
+  };
 
   const abrirModal = (tab) => {
     setActiveTab(tab);
@@ -70,13 +70,8 @@ export default function Tanquesitos() {
             <div className="tank-display" style={{ backgroundColor: selectedColor }} />
           </div>
 
-          <h3 className="modal-subtitle">Otras configuraciones</h3>
-          <div className="options-grid">
-            <div className="option-box">Dificultad</div>
-            <div className="option-box">Velocidad</div>
-            <div className="option-box">Distancia de visión</div>
-            <div className="option-box">Brillo</div>
-          </div>
+
+          
         </>
       );
     }
@@ -123,46 +118,86 @@ export default function Tanquesitos() {
     );
   };
 
-  if (enJuego) {
-    return <Game usuario={usuario} color={selectedColor} />;
+  // --- Pantallas de auth ---
+  if (pantalla === "login") {
+    return (
+      <Login
+        onLogin={handleLogin}
+        irARegister={() => setPantalla("register")}
+      />
+    );
   }
 
+  if (pantalla === "register") {
+    return (
+      <Register
+        onRegistrado={handleRegistro}
+        irALogin={() => setPantalla("login")}
+      />
+    );
+  }
+
+  // --- Juego ---
+  if (pantalla === "juego") {
+    return (
+      <Game
+        usuario={usuario}
+        color={selectedColor}
+        volumenSonido={soundVolume}
+        volumenMusica={musicVolume}
+        onSalir={() => setPantalla("config")}
+      />
+    );
+  }
+
+  // --- Menú / Config (pantalla === "config") ---
   return (
     <div className="app-container">
       <h1 className="app-title">Tanquesitos.io</h1>
 
+      <p style={{ fontSize: "14px", marginTop: "-16px" }}>
+        Bienvenido, <strong>{usuario}</strong>
+      </p>
+
       <div className="login-form">
-        <label>Nombre de Usuario</label>
-        <input
-          type="text"
-          placeholder="Escriba aqui"
-          value={usuario}
-          onChange={(e) => setUsuario(e.target.value)}
-        />
         <button
-          onClick={() => {
-            if (usuario.trim() === "") {
-              alert("Por favor, ingresa un nombre de usuario");
-            } else {
-              setEnJuego(true);
-            }
-          }}
+          onClick={() => setPantalla("juego")}
           className="btn btn-primary"
         >
-          Entrar
+          ¡Jugar!
         </button>
       </div>
 
       {!modalVisible && (
         <div className="options-container">
-          <button type="button" onClick={() => abrirModal("general")} className="btn-option">
+          <button
+            type="button"
+            onClick={() => abrirModal("general")}
+            className="btn-option"
+          >
             Configuración
           </button>
-          <button type="button" onClick={() => abrirModal("sonido")} className="btn-option">
+          <button
+            type="button"
+            onClick={() => abrirModal("sonido")}
+            className="btn-option"
+          >
             Sonido
           </button>
-          <button type="button" onClick={() => abrirModal("teclas")} className="btn-option">
+          <button
+            type="button"
+            onClick={() => abrirModal("teclas")}
+            className="btn-option"
+          >
             Teclas
+          </button>
+          <button
+            type="button"
+            onClick={() => setPantalla("login")}
+            className="btn-option"
+            style={{ backgroundColor: "rgba(232,57,46,0.3)" }}
+          >
+            Cerrar sesión
           </button>
         </div>
       )}
@@ -197,7 +232,11 @@ export default function Tanquesitos() {
               </div>
               {renderTabContent()}
               <div className="action-button-container">
-                <button type="button" onClick={cerrarModal} className="btn-accept">
+                <button
+                  type="button"
+                  onClick={cerrarModal}
+                  className="btn-accept"
+                >
                   Aceptar
                 </button>
               </div>
