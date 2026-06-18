@@ -261,7 +261,7 @@ export default function Game({ usuario, color = "#00b2e1" }) {
           fbUpdate(ref(db, `bullets/${b.id}`), { x: nx, y: ny, life: nlife });
         }
       });
-
+//------------------------------------------------------------------------------------------------------------------------------------------
       // Sincronizar posición propia
       if (now - lastSync > SYNC_INTERVAL) {
         fbUpdate(ref(db, `players/${state.playerId}`), {
