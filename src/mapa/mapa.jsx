@@ -10,6 +10,7 @@ import {
   push,
 } from "firebase/database";
 
+// --- Constantes principales del juego ---
 const PLAYER_SPEED = 4;
 const PLAYER_RADIUS = 20;
 const BULLET_SPEED = 8;
@@ -22,6 +23,7 @@ const RESPAWN_TIME = 3000; // ms
 export default function Game({ usuario, color = "#00b2e1" }) {
   const canvasRef = useRef(null);
 
+  // Estado global del juego, almacenado en una referencia para evitar rerenders
   const stateRef = useRef({
     player: { x: 0, y: 0, angle: 0, hp: MAX_HP, alive: true, respawnAt: 0 },
     keys: {},
@@ -38,6 +40,7 @@ export default function Game({ usuario, color = "#00b2e1" }) {
     const ctx = canvas.getContext("2d");
     const state = stateRef.current;
 
+    // --- Inicialización del canvas y reciclado de tamaño ---
     function resize() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -45,6 +48,7 @@ export default function Game({ usuario, color = "#00b2e1" }) {
     resize();
     window.addEventListener("resize", resize);
 
+    // --- Posición inicial aleatoria para el jugador ---
     function spawnPosition() {
       return {
         x: (Math.random() - 0.5) * 1000,
@@ -116,7 +120,7 @@ export default function Game({ usuario, color = "#00b2e1" }) {
       state.remoteBullets = Object.keys(data).map((id) => ({ id, ...data[id] }));
     });
 
-    // --- Inputs ---
+    // --- Manejo de entradas de teclado y ratón ---
     function onKeyDown(e) {
       state.keys[e.key.toLowerCase()] = true;
     }
@@ -163,7 +167,7 @@ export default function Game({ usuario, color = "#00b2e1" }) {
 
       const now = performance.now();
 
-      // --- Si está muerto, esperar respawn ---
+      // --- Lógica de juego: respawn, movimiento y disparo ---
       if (!player.alive) {
         if (now >= player.respawnAt) {
           respawnPlayer();
@@ -300,7 +304,7 @@ export default function Game({ usuario, color = "#00b2e1" }) {
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
 
-      // Fondo
+      // --- Dibujado del mundo completo ---
       ctx.fillStyle = "#cdcdcd";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
