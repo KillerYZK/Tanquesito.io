@@ -5,6 +5,8 @@ import Register from "./Register";
 import "./app.css";
 
 export default function Tanquesitos() {
+  // Estado principal del componente.
+  // Controla qué pantalla se muestra y los valores de configuración.
   const [pantalla, setPantalla] = useState("login"); // "login" | "register" | "config" | "juego"
   const [modalVisible, setModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
@@ -13,6 +15,7 @@ export default function Tanquesitos() {
   const [soundVolume, setSoundVolume] = useState(80);
   const [musicVolume, setMusicVolume] = useState(70);
 
+  // Datos de configuración estáticos.
   const colores = [
     "#29b6e8", "#e8392e", "#3aa845", "#f0d018", "#f29420", "#e23ec0",
     "#2255e8", "#c0231e", "#1f8038", "#c4b418", "#9a5a18", "#7a1ec0",
@@ -32,6 +35,7 @@ export default function Tanquesitos() {
     ["V", "Chat"],
   ];
 
+  // Funciones que manejan acciones del usuario: login, registro y apertura/cierre de modal.
   const handleLogin = (nombre) => {
     setUsuario(nombre);
     setPantalla("config");
@@ -49,6 +53,7 @@ export default function Tanquesitos() {
 
   const cerrarModal = () => setModalVisible(false);
 
+  // Decide qué contenido mostrar dentro de la modal según la pestaña activa.
   const renderTabContent = () => {
     if (activeTab === "general") {
       return (
@@ -118,7 +123,12 @@ export default function Tanquesitos() {
     );
   };
 
-  // --- Pantallas de auth ---
+  // --- Pantallas principales ---
+  // Dependiendo de la variable "pantalla" se muestra:
+  //   - Login
+  //   - Registro
+  //   - Juego
+  //   - Menú de configuración
   if (pantalla === "login") {
     return (
       <Login
@@ -137,7 +147,6 @@ export default function Tanquesitos() {
     );
   }
 
-  // --- Juego ---
   if (pantalla === "juego") {
     return (
       <Game
